@@ -8,3 +8,4 @@ fpdf2>=2.7.0
 xlsxwriter>=3.0.0
 openai>=1.0.0
 tenacity>=8.0.0
+httpx>=0.24.0
