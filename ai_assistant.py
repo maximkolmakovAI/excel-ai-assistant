@@ -118,18 +118,24 @@ def ask_ai(
         data = response.json()
         raw = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
         
-        # Remove control characters and clean JSON
-        raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', raw)
+        # Remove all control characters and non-printable characters
+        raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', raw)
         
+        parsed = None
+        # Try to parse JSON
         try:
             parsed = json.loads(raw)
-        except json.JSONDecodeError as e:
-            # Try to fix common issues
-            raw = raw.replace('\n', '\\n').replace('\r', '\\r')
-            try:
-                parsed = json.loads(raw)
-            except:
-                return {"text": f"Ошибка обработки ответа ИИ: {e}", "df": None, "fig": None, "error": str(e), "code": ""}
+        except json.JSONDecodeError:
+            # Try to extract JSON from the response
+            json_match = re.search(r'\{[^{}]*\}', raw, re.DOTALL)
+            if json_match:
+                try:
+                    parsed = json.loads(json_match.group())
+                except:
+                    pass
+            # If still fails, return error
+            if parsed is None:
+                return {"text": "Ошибка обработки ответа ИИ", "df": None, "fig": None, "error": f"Raw: {raw[:500]}", "code": ""}
         
         code = parsed.get("code", "")
         explanation = parsed.get("explanation", "")
