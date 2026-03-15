@@ -117,8 +117,20 @@ def ask_ai(
         response.raise_for_status()
         data = response.json()
         raw = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+        
+        # Remove control characters and clean JSON
         raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', raw)
-        parsed = json.loads(raw)
+        
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as e:
+            # Try to fix common issues
+            raw = raw.replace('\n', '\\n').replace('\r', '\\r')
+            try:
+                parsed = json.loads(raw)
+            except:
+                return {"text": f"Ошибка обработки ответа ИИ: {e}", "df": None, "fig": None, "error": str(e), "code": ""}
+        
         code = parsed.get("code", "")
         explanation = parsed.get("explanation", "")
     except Exception as e:
